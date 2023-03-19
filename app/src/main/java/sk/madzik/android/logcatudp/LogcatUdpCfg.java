@@ -1,16 +1,13 @@
 package sk.madzik.android.logcatudp;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.Arrays;
-
-import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.provider.Settings.Secure;
 import android.text.TextUtils;
@@ -58,15 +55,14 @@ public class LogcatUdpCfg extends AppCompatActivity {
     private EditText txtFilter;
     private CheckBox chkAutoStart;
 
-    private Button btnActivateService;
-    private Button btnDeactivateService;
     private Button btnGrantLogs;
 
     private Spinner spinLogFormat;
 
     ProgressDialog prgDialog;
+    private String androidID;
 
-    public class Preferences {
+    public static class Preferences {
         public static final String PREFS_NAME = "LogcatUdp";
         public static final String SEND_IDS = "SendIds";
         public static final String DEV_ID = "DeviceID";
@@ -108,27 +104,20 @@ public class LogcatUdpCfg extends AppCompatActivity {
             findViewById(R.id.lblID).setVisibility(View.GONE);
             txtDevId.setVisibility(View.GONE);
         }
-        chkSendIds.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                findViewById(R.id.lblID).setVisibility((isChecked ? View.VISIBLE : View.GONE));
-                txtDevId.setVisibility((isChecked ? View.VISIBLE : View.GONE));
-            }
+        chkSendIds.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            findViewById(R.id.lblID).setVisibility((isChecked ? View.VISIBLE : View.GONE));
+            txtDevId.setVisibility((isChecked ? View.VISIBLE : View.GONE));
         });
 
         // set text in ID editbox
-        String android_ID = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
-        if (TextUtils.isEmpty(android_ID))
-            android_ID = "emulator";
-        txtDevId.setText("" + mSettings.getString(Preferences.DEV_ID, android_ID));
+        txtDevId.setText(mSettings.getString(Preferences.DEV_ID, androidID));
 
-        txtServer.setText("" + mSettings.getString(Preferences.DEST_SERVER, DEF_SERVER));
-        txtPort.setText("" + mSettings.getInt(Preferences.DEST_PORT, DEF_PORT));
+        txtServer.setText(mSettings.getString(Preferences.DEST_SERVER, DEF_SERVER));
+        txtPort.setText(String.valueOf(mSettings.getInt(Preferences.DEST_PORT, DEF_PORT)));
         chkAutoStart.setChecked(mSettings.getBoolean(Preferences.AUTO_START, true));
 
         // set log format
-        spinLogFormat.setSelection(
-                getLogFormatIndex(mSettings.getString(Preferences.LOG_FORMAT, DEF_FORMAT)));
+        spinLogFormat.setSelection(getLogFormatIndex(mSettings.getString(Preferences.LOG_FORMAT, DEF_FORMAT)));
 
         // set Filter log (un)checked
         chkUseFilter.setChecked(mSettings.getBoolean(Preferences.USE_FILTER, false));
@@ -137,47 +126,35 @@ public class LogcatUdpCfg extends AppCompatActivity {
             findViewById(R.id.lblFilter).setVisibility(View.GONE);
             txtFilter.setVisibility(View.GONE);
         }
-        chkUseFilter.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                findViewById(R.id.lblFilter).setVisibility((isChecked ? View.VISIBLE : View.GONE));
-                txtFilter.setVisibility((isChecked ? View.VISIBLE : View.GONE));
-            }
+        chkUseFilter.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            findViewById(R.id.lblFilter).setVisibility((isChecked ? View.VISIBLE : View.GONE));
+            txtFilter.setVisibility((isChecked ? View.VISIBLE : View.GONE));
         });
 
         // set text in filter editbox
-        txtFilter.setText("" + mSettings.getString(Preferences.FILTER_TEXT, ""));
+        txtFilter.setText(mSettings.getString(Preferences.FILTER_TEXT, ""));
 
-        btnActivateService = (Button) findViewById(R.id.activateServiceBtn);
-        btnActivateService.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopService();
-                saveSettings();
-                startService();
-                Toast.makeText(LogcatUdpCfg.this, "LogcatUdp service (re)started", Toast.LENGTH_SHORT).show();
+        Button btnActivateService = findViewById(R.id.activateServiceBtn);
+        btnActivateService.setOnClickListener(v -> {
+            stopService();
+            saveSettings();
+            startService();
+            Toast.makeText(LogcatUdpCfg.this, "LogcatUdp service (re)started", Toast.LENGTH_SHORT).show();
+        });
+
+        Button btnDeactivateService = findViewById(R.id.deactivateServiceBtn);
+        btnDeactivateService.setOnClickListener(v -> {
+            if (stopService()) {
+                Toast.makeText(LogcatUdpCfg.this, "LogcatUdp service stopped", Toast.LENGTH_SHORT).show();
             }
         });
 
-        btnDeactivateService = (Button) findViewById(R.id.deactivateServiceBtn);
-        btnDeactivateService.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (stopService()) {
-                    Toast.makeText(LogcatUdpCfg.this, "LogcatUdp service stopped", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        btnGrantLogs = (Button) findViewById(R.id.grantPermissionBtn);
-        btnGrantLogs.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Context context = getApplicationContext();
-                RootUtils.setReadLogsPermission(context);
-                if (RootUtils.haveReadLogsPermission(context)) {
-                    btnGrantLogs.setEnabled(false);
-                }
+        btnGrantLogs = findViewById(R.id.grantPermissionBtn);
+        btnGrantLogs.setOnClickListener(view -> {
+            Context context = getApplicationContext();
+            RootUtils.setReadLogsPermission(context);
+            if (RootUtils.haveReadLogsPermission(context)) {
+                btnGrantLogs.setEnabled(false);
             }
         });
         if (!RootUtils.haveReadLogsPermission(getApplicationContext()) && RootUtils.isDeviceRooted()) {
@@ -191,8 +168,9 @@ public class LogcatUdpCfg extends AppCompatActivity {
     public void onPause() {
         Log.d(TAG, "Pause cfg dialog");
         super.onPause();
-        if (!cancelSave)
+        if (!cancelSave) {
             saveSettings();
+        }
     }
 
     @Override
@@ -219,7 +197,7 @@ public class LogcatUdpCfg extends AppCompatActivity {
                 saveSettings();
                 break;
             case MENU_CANCEL:
-            /*boolean stopped = */
+                /*boolean stopped = */
                 stopService();
                 cancelSave = true;
                 finish();
@@ -266,7 +244,7 @@ public class LogcatUdpCfg extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    final Handler handler = new Handler() {
+    final Handler handler = new Handler(Looper.getMainLooper()) {
         public void handleMessage(Message msg) {
             prgDialog.dismiss();
         }
@@ -286,15 +264,14 @@ public class LogcatUdpCfg extends AppCompatActivity {
         return stopres;
     }
 
-    private boolean saveSettings() {
+    private void saveSettings() {
         Log.d(TAG, "saving settings");
         SharedPreferences.Editor editor = mSettings.edit();
 
         boolean sendIds = chkSendIds.isChecked();
 
         String devId = "";
-        if (sendIds)
-            devId = txtDevId.getText().toString();
+        if (sendIds) devId = txtDevId.getText().toString();
         String destServer = txtServer.getText().toString();
         int destPort = 0;
         boolean error = false;
@@ -310,41 +287,37 @@ public class LogcatUdpCfg extends AppCompatActivity {
 
         boolean useFilter = chkUseFilter.isChecked();
         String filterText = "";
-        if (useFilter)
-            filterText = txtFilter.getText().toString();
+        if (useFilter) filterText = txtFilter.getText().toString();
 
         boolean autoStart = chkAutoStart.isChecked();
 
         if (!error) {
-            /*boolean startserv = false;
-			if (LogcatUdpService.isRunning) {
-				stopService();
-				startserv = true;
-			}*/
+//          boolean startserv = false;
+//			if (LogcatUdpService.isRunning) {
+//				stopService();
+//				startserv = true;
+//			}
             editor.putBoolean(Preferences.SEND_IDS, sendIds);
-            if (sendIds)
-                editor.putString(Preferences.DEV_ID, devId);
+            if (sendIds) editor.putString(Preferences.DEV_ID, devId);
             editor.putString(Preferences.DEST_SERVER, destServer);
             editor.putInt(Preferences.DEST_PORT, destPort);
             editor.putBoolean(Preferences.USE_FILTER, useFilter);
-            if (useFilter)
-                editor.putString(Preferences.FILTER_TEXT, filterText);
+            if (useFilter) editor.putString(Preferences.FILTER_TEXT, filterText);
             editor.putBoolean(Preferences.AUTO_START, autoStart);
             editor.putString(Preferences.LOG_FORMAT, logFormat);
-            editor.commit();
+            editor.apply();
             Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show();
-			/*if (startserv) {
-				startService();
-			}*/
+//			if (startserv) {
+//				startService();
+//			}
         } else {
             Toast.makeText(this, "Settings not saved!!!", Toast.LENGTH_LONG).show();
         }
-        return !error;
     }
 
-    private int getLogFormatIndex( String format ) {
+    private int getLogFormatIndex(String format) {
         String[] format_array = getResources().getStringArray(R.array.log_format_array);
         int ret = Arrays.asList(format_array).indexOf(format);
-        return ret >= 0 ? ret : 0;
+        return Math.max(ret, 0);
     }
 }

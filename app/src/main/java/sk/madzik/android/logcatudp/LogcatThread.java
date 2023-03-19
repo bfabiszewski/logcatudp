@@ -12,9 +12,9 @@ import java.net.InetAddress;
 import sk.madzik.android.logcatudp.LogcatUdpService.Config;
 
 public class LogcatThread extends Thread {
-    private static final String TAG = "LogcatThread";
-    private DatagramSocket mSocket = null;
-    private Config mConfig = null;
+    private static final String TAG = LogcatThread.class.getSimpleName();
+    private final DatagramSocket mSocket;
+    private final Config mConfig;
 
     LogcatThread(DatagramSocket socket, Config config) {
         Log.d(TAG, "Thread constructed.");

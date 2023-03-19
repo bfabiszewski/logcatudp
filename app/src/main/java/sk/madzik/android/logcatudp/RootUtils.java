@@ -1,5 +1,6 @@
 package sk.madzik.android.logcatudp;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.util.Log;
@@ -23,7 +24,7 @@ public final class RootUtils {
 
     public static boolean haveReadLogsPermission(Context context) {
         PackageManager pm = context.getPackageManager();
-        return pm.checkPermission(android.Manifest.permission.READ_LOGS, context.getPackageName()) == 0;
+        return pm.checkPermission(Manifest.permission.READ_LOGS, context.getPackageName()) == PackageManager.PERMISSION_GRANTED;
     }
 
     public static void setReadLogsPermission(Context context) {
@@ -33,20 +34,17 @@ public final class RootUtils {
             String pname = context.getPackageName();
             String[] CMDLINE_GRANTPERMS = {"su", "-c", null};
             Log.d(TAG, "we do not have the READ_LOGS permission. Trying to acquire...");
-            if (android.os.Build.VERSION.SDK_INT >= 16) {
-                Log.d(TAG, "Working around JellyBeans 'feature'...");
-                try {
-                    // format the commandline parameter
-                    CMDLINE_GRANTPERMS[2] = String.format("pm grant %s android.permission.READ_LOGS", pname);
-                    java.lang.Process p = Runtime.getRuntime().exec(CMDLINE_GRANTPERMS);
-                    int res = p.waitFor();
-                    Log.d(TAG, "exec returned: " + res);
-                    if (res != 0)
-                        throw new Exception("failed to become root");
-                } catch (Exception e) {
-                    Log.d(TAG, "exec(): " + e);
-                    Toast.makeText(context, "Failed to obtain READ_LOGS permission", Toast.LENGTH_LONG).show();
-                }
+            Log.d(TAG, "Working around JellyBeans 'feature'...");
+            try {
+                // format the commandline parameter
+                CMDLINE_GRANTPERMS[2] = String.format("pm grant %s android.permission.READ_LOGS", pname);
+                Process p = Runtime.getRuntime().exec(CMDLINE_GRANTPERMS);
+                int res = p.waitFor();
+                Log.d(TAG, "exec returned: " + res);
+                if (res != 0) throw new Exception("failed to become root");
+            } catch (Exception e) {
+                Log.d(TAG, "exec(): " + e);
+                Toast.makeText(context, "Failed to obtain READ_LOGS permission", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -61,8 +59,7 @@ public final class RootUtils {
     }
 
     private static boolean checkRootMethod2() {
-        String[] paths = {"/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su", "/system/sd/xbin/su",
-                "/system/bin/failsafe/su", "/data/local/su"};
+        String[] paths = {"/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su", "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su"};
         for (String path : paths) {
             if (new File(path).exists()) return true;
         }
