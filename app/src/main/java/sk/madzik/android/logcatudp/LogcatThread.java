@@ -1,14 +1,13 @@
 package sk.madzik.android.logcatudp;
 
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-
-import android.util.Log;
 
 import sk.madzik.android.logcatudp.LogcatUdpService.Config;
 
@@ -47,16 +46,14 @@ public class LogcatThread extends Thread {
                         sendingLine = mConfig.mDevId + ": ";
                     }
                     sendingLine += logLine + System.getProperty("line.separator");
-                    DatagramPacket packet = new DatagramPacket(sendingLine.getBytes(), sendingLine.length(),
-                            destAddress, mConfig.mDestPort);
+                    DatagramPacket packet = new DatagramPacket(sendingLine.getBytes(), sendingLine.length(), destAddress, mConfig.mDestPort);
                     try {
                         mSocket.send(packet);
                         if (socketFailed) {
                             Log.d(TAG, "socket back online");
                             socketFailed = false;
                         }
-                        sendingLine = "";
-                    } catch (SocketException e) {
+                    } catch (IOException e) {
                         // it's OK, line was remembered
                         if (!socketFailed) {
                             Log.d(TAG, "socket send failed " + e);
@@ -65,7 +62,7 @@ public class LogcatThread extends Thread {
                     }
                 }
                 if (isInterrupted()) {
-                    Log.d(TAG, "interupted.");
+                    Log.d(TAG, "interrupted.");
                     break;
                 }
             }
