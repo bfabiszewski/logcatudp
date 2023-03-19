@@ -1,13 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 4
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 33
+    buildToolsVersion '33.0.0'
 
     defaultConfig {
-        applicationId "sk.madzik.android.logcatudp"
-        minSdkVersion 3
-        targetSdkVersion 4
+        applicationId 'sk.madzik.android.logcatudp'
+        minSdkVersion 23
+        targetSdkVersion 33
+        versionCode 5
+        versionName '0.5'
     }
 
     buildTypes {
@@ -15,5 +17,17 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    namespace 'sk.madzik.android.logcatudp'
+
+    dependencies {
+        implementation fileTree(include: ['*.jar'], dir: 'libs')
+        implementation 'androidx.appcompat:appcompat:1.6.1'
     }
 }
