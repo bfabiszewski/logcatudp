@@ -239,18 +239,18 @@ public class LogcatUdpCfg extends AppCompatActivity {
                     public void run() {
                         Intent intent = new Intent(android.content.Intent.ACTION_SEND);
                         intent.setType("text/plain");
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-                        String androidID = Secure.getString(LogcatUdpCfg.this.getContentResolver(), Secure.ANDROID_ID);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
                         intent.putExtra(Intent.EXTRA_SUBJECT, "Logcat from phone: " + androidID);
                         try {
-                            Process process = Runtime.getRuntime().exec("logcat -d");
-                            DataInputStream reader = new DataInputStream(process.getInputStream());
-                            String extraText = "";
+                            Process process = Runtime.getRuntime().exec("logcat -d -t 1000");
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                            StringBuilder extraText = new StringBuilder();
                             String ln_str;
                             while ((ln_str = reader.readLine()) != null) {
-                                extraText += ln_str + System.getProperty("line.separator");
+                                extraText.append(ln_str).append(System.getProperty("line.separator"));
                             }
-                            intent.putExtra(Intent.EXTRA_TEXT, extraText);
+                            Log.d(TAG, "Text size: " + extraText.toString().length());
+                            intent.putExtra(Intent.EXTRA_TEXT, extraText.toString());
                             startActivity(Intent.createChooser(intent, "How do you want to share?"));
                         } catch (IOException e) {
                             Log.e(TAG, "Sharing log failed!");
