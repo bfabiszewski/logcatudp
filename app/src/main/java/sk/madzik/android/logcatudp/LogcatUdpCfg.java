@@ -262,7 +262,7 @@ public class LogcatUdpCfg extends Activity {
     private void startService() {
         Intent serviceIntent = new Intent(LogcatUdpCfg.this, LogcatUdpService.class);
         Log.d(TAG, "Start service");
-        startService(serviceIntent);
+        ContextCompat.startForegroundService(getApplicationContext(), serviceIntent);
     }
 
     private boolean stopService() {
