@@ -18,16 +18,23 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-public class LogcatUdpCfg extends Activity {
-    public static final String TAG = "LogcatUdpCfg";
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+
+public class LogcatUdpCfg extends AppCompatActivity {
+    public static final String TAG = LogcatUdpCfg.class.getSimpleName();
 
     private static final int MENU_SAVE = Menu.FIRST + 1;
     private static final int MENU_CANCEL = Menu.FIRST + 2;
@@ -71,20 +78,26 @@ public class LogcatUdpCfg extends Activity {
         public static final String LOG_FORMAT = "LogFormat";
     }
 
+    @SuppressLint("HardwareIds")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "started");
         super.onCreate(savedInstanceState);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         setContentView(R.layout.main);
+        androidID = Secure.getString(LogcatUdpCfg.this.getContentResolver(), Secure.ANDROID_ID);
+        if (TextUtils.isEmpty(androidID)) {
+            androidID = "emulator";
+        }
 
-        chkSendIds = (CheckBox) findViewById(R.id.chkSendIds);
-        txtDevId = (EditText) findViewById(R.id.txtID);
-        txtServer = (EditText) findViewById(R.id.txtServer);
-        txtPort = (EditText) findViewById(R.id.txtPort);
-        spinLogFormat = (Spinner) findViewById(R.id.spinLogFormat);
-        chkUseFilter = (CheckBox) findViewById(R.id.chkUseFilter);
-        txtFilter = (EditText) findViewById(R.id.txtFilter);
-        chkAutoStart = (CheckBox) findViewById(R.id.chkAutoStart);
+        chkSendIds = findViewById(R.id.chkSendIds);
+        txtDevId = findViewById(R.id.txtID);
+        txtServer = findViewById(R.id.txtServer);
+        txtPort = findViewById(R.id.txtPort);
+        spinLogFormat = findViewById(R.id.spinLogFormat);
+        chkUseFilter = findViewById(R.id.chkUseFilter);
+        txtFilter = findViewById(R.id.txtFilter);
+        chkAutoStart = findViewById(R.id.chkAutoStart);
 
         mSettings = getSharedPreferences(Preferences.PREFS_NAME, MODE_PRIVATE);
 
