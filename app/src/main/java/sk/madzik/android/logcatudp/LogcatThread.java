@@ -32,6 +32,7 @@ public class LogcatThread extends Thread {
             if (mConfig.mUseFilter && mConfig.mFilter.trim().length() > 0) {
                 procString += " *:s " + mConfig.mFilter;
             }
+            Log.d(TAG, "Logcat command: " + procString);
             Process process = Runtime.getRuntime().exec(procString);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String logLine;

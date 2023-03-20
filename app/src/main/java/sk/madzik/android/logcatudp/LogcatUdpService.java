@@ -15,6 +15,7 @@ import android.provider.Settings.Secure;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -24,7 +25,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 public class LogcatUdpService extends Service {
-    public static final String TAG = "LogcatUdpService";
+    public static final String TAG = LogcatUdpService.class.getSimpleName();
     public static boolean isRunning = false;
 
     static class Config {
@@ -48,20 +49,7 @@ public class LogcatUdpService extends Service {
 
         Log.d(TAG, TAG + " started");
 
-        // get configuration
-        Config mConfig = new Config();
-        SharedPreferences settings = getSharedPreferences(LogcatUdpCfg.Preferences.PREFS_NAME, Context.MODE_PRIVATE);
-        mConfig.mSendIds = settings.getBoolean(LogcatUdpCfg.Preferences.SEND_IDS, false);
-        @SuppressLint("HardwareIds") String android_ID = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
-        if (TextUtils.isEmpty(android_ID)) {
-            android_ID = "emulator";
-        }
-        mConfig.mDevId = settings.getString(LogcatUdpCfg.Preferences.DEV_ID, android_ID);
-        mConfig.mDestServer = settings.getString(LogcatUdpCfg.Preferences.DEST_SERVER, LogcatUdpCfg.DEF_SERVER);
-        mConfig.mDestPort = settings.getInt(LogcatUdpCfg.Preferences.DEST_PORT, LogcatUdpCfg.DEF_PORT);
-        mConfig.mUseFilter = settings.getBoolean(LogcatUdpCfg.Preferences.USE_FILTER, false);
-        mConfig.mFilter = settings.getString(LogcatUdpCfg.Preferences.FILTER_TEXT, "");
-        mConfig.mLogFormat = settings.getString(LogcatUdpCfg.Preferences.LOG_FORMAT, "");
+        Config mConfig = getConfig();
 
         try {
             mSocket = new DatagramSocket();
@@ -74,6 +62,25 @@ public class LogcatUdpService extends Service {
         mLogcatThread.start();
 
         isRunning = true;
+    }
+
+    @NonNull
+    private Config getConfig() {
+        @SuppressLint("HardwareIds") String android_ID = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
+        if (TextUtils.isEmpty(android_ID)) {
+            android_ID = "emulator";
+        }
+
+        Config mConfig = new Config();
+        SharedPreferences settings = getSharedPreferences(LogcatUdpCfg.Preferences.PREFS_NAME, Context.MODE_PRIVATE);
+        mConfig.mSendIds = settings.getBoolean(LogcatUdpCfg.Preferences.SEND_IDS, false);
+        mConfig.mDevId = settings.getString(LogcatUdpCfg.Preferences.DEV_ID, android_ID);
+        mConfig.mDestServer = settings.getString(LogcatUdpCfg.Preferences.DEST_SERVER, LogcatUdpCfg.DEF_SERVER);
+        mConfig.mDestPort = settings.getInt(LogcatUdpCfg.Preferences.DEST_PORT, LogcatUdpCfg.DEF_PORT);
+        mConfig.mUseFilter = settings.getBoolean(LogcatUdpCfg.Preferences.USE_FILTER, false);
+        mConfig.mFilter = settings.getString(LogcatUdpCfg.Preferences.FILTER_TEXT, "");
+        mConfig.mLogFormat = settings.getString(LogcatUdpCfg.Preferences.LOG_FORMAT, "");
+        return mConfig;
     }
 
     @Override

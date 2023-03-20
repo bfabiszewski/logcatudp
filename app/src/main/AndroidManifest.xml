@@ -23,7 +23,8 @@
         </activity>
         <service
             android:name="LogcatUdpService"
-            android:process=":LogcatUdpService" />
+            android:enabled="true"
+            android:exported="false" />
         <receiver
             android:name="LogcatUdpReceiver"
             android:enabled="true"
